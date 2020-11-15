@@ -91,14 +91,14 @@ int main(void)
         absdiff(original, background, result);
         blur(result, blurred, Size(15, 15));
         absdiff(result, blurred, result);
-        blur(result, result, Size(5, 5));
+        blur(result, result, Size(6, 6));
         //cvtColor(result, result, COLOR_BGR2GRAY);
         // Segmentation...
         threshold(result, result, 9, 255, THRESH_BINARY);
 
 
         // After Image stuff... final.... convert image to grayscale image
-        findContours(grey, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+        findContours(result, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
 
         // iterate through akk the top-level counters -> "hierarchy" may not be empty!
         if(hierarchy.size() > 0)
@@ -106,7 +106,7 @@ int main(void)
             for(int idx = 0; idx >= 0; idx = hierarchy[idx][0])
             {
                 // check contour size (number of points) and area ("blob" size)
-                if(contourArea(Mat(contours.at(idx))) < 30 && contours.at(idx).size() > 4 )
+                if(contourArea(Mat(contours.at(idx))) < 130 && contours.at(idx).size() > 4 )
                 {
                     // fit & draw ellipse to counter at index
                     ellipse(original, fitEllipse(Mat(contours.at(idx))), Scalar(0,0,255), 1, 8);
