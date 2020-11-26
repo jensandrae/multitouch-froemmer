@@ -20,7 +20,3 @@ void Touch::setId(int id) {
 void Touch::setPosition(int position) {
     this->position = position;
 }
-
-boolean Touch::isFingerNew(Point2f posOld, Point2f posNew) {
-    return false;
-}

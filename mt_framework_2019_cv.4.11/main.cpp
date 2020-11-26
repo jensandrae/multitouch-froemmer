@@ -3,6 +3,7 @@
 *
 * Bjoern Froemmer, January 2010 - October 2019
 */
+#pragma once
 
 #include "opencv2/opencv.hpp"
 #include <iostream>
@@ -10,6 +11,7 @@
 #include <math.h>
 #include <vector>
 #include <Windows.h>
+#include "TouchController.h"
 
 #define SCALE_SOBEL 1
 #define DELTA_SOBEL 0
@@ -56,6 +58,7 @@ int main(void)
     cv::createTrackbar("Threshold", windowName, &thresh, 100);
     bool firstFrame = true;
 
+    //TouchController touchCon;
     for (;;)
     {
 

@@ -5,17 +5,20 @@
 #include "TouchController.h"
 
 TouchController::TouchController() {
+    this->t0 = make_shared<list<Touch>>();
+    this->t1 = make_shared<list<Touch>>();
     uniqueIdCounter = 0;
 }
 
 
-void TouchController::setNewFrame(list<Points2f> newTouches) {
-
+void TouchController::setNewFrame(list<Point2f> newTouches) {
+    updateTouchLists();
+    t1 = std::make_shared<list<touch>>(newTouches);
 }
 
 
-void TouchController::updateTouchLists(Mat newFrame) {
-
+void TouchController::updateTouchLists() {
+    t0 = std::make_shared<list<touch>>(t1);
 }
 
 
