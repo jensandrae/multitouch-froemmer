@@ -11,9 +11,11 @@
 #include <vector>
 #include <Windows.h>
 
+#define SCALE_SOBEL 1
+#define DELTA_SOBEL 0
+
 using namespace cv;
 using namespace std;
-
 
 int main(void)
 {
@@ -30,7 +32,7 @@ int main(void)
     double videoWidth = cap.get(CAP_PROP_FRAME_WIDTH);
     double videoHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
 
-    Mat frame, original, grey;
+    Mat frame, original, grey, refImg, onlyContours;
 
     int currentFrame = 0; // frame counter
     clock_t ms_start, ms_end, ms_time; // time
@@ -44,19 +46,19 @@ int main(void)
 
     const char* windowName = "Fingertip detection";
     int wKey = 80;
-    int minH = 15, maxH = 15, minS = 5, maxS = 5, minV = 4, maxV = 130;
+    //Old values: 10, 4, 30, 4
+    int kernelSize = 10, minV = 3, maxV = 26, thresh = 4;
     cv::namedWindow(windowName);
     cv::createTrackbar("WaitKey", windowName, &wKey, 200);
-    cv::createTrackbar("High-Pass-Filter (1) MinH", windowName, &minH, 100);
-    cv::createTrackbar("High-Pass-Filter (1) MaxH", windowName, &maxH, 100);
-    cv::createTrackbar("High-Pass-Filter (2) MinS", windowName, &minS, 100);
-    cv::createTrackbar("High-Pass-Filter (2) MaxS", windowName, &maxS, 100);
-    cv::createTrackbar("Contour Detection MinV", windowName, &minV, 50);
-    cv::createTrackbar("Contour Detection MaxV", windowName, &maxV, 200);
-
+    cv::createTrackbar("High-Pass-Filter", windowName, &kernelSize, 100);
+    cv::createTrackbar("ContourArea", windowName, &maxV, 100);
+    cv::createTrackbar("Contour Size", windowName, &minV, 30);
+    cv::createTrackbar("Threshold", windowName, &thresh, 100);
+    bool firstFrame = true;
 
     for (;;)
     {
+
         ms_start = clock(); // time start
 
         cap >> frame; // get a new frame from the videostream
@@ -72,6 +74,12 @@ int main(void)
 
         // convert frame to greyscale image (copies the image in the process!)
         cvtColor(original, grey, COLOR_BGR2GRAY);
+
+        //Calibrate with first frame
+        if (firstFrame) {
+            firstFrame = false;
+            cvtColor(original, refImg, COLOR_BGR2GRAY);
+        }
 
         //--------------------------
         // https://docs.opencv.org/4.1.1/
@@ -96,22 +104,14 @@ int main(void)
         }
 
         // get the difference from original image (without touches) to touched image
-        absdiff(original, background, result);
+        absdiff(refImg, grey, result);
         // High-Pass-Filter
-        blur(result, blurred, Size(minH, maxH));
+        blur(result, blurred, Size(kernelSize, kernelSize));
         absdiff(result, blurred, result);
-        blur(result, result, Size(minS, maxS));
-
-        /* ORIGINAL
-        blur(result, blurred, Size(15, 15));
-        absdiff(result, blurred, result);
-        blur(result, result, Size(5, 5));
-        */
+        blur(result, result, Size(kernelSize, kernelSize)); 
         
-        // cvtColor(result, result, COLOR_BGR2GRAY);
-        // Segmentation...
-        threshold(result, result, 9, 255, THRESH_BINARY);
 
+        threshold(result, result, thresh, 255, THRESH_BINARY);
 
         // After Image stuff... final.... convert image to grayscale image
         findContours(result, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
@@ -121,9 +121,10 @@ int main(void)
         {
             for(int idx = 0; idx >= 0; idx = hierarchy[idx][0])
             {
+                 
                 // check contour size (number of points) and area ("blob" size)
-                // if(contourArea(Mat(contours.at(idx))) < 130 && contours.at(idx).size() > 4 )
-                if(contourArea(Mat(contours.at(idx))) < maxV && contours.at(idx).size() > minV)
+                double conArea= contourArea(Mat(contours.at(idx)));
+                if(conArea > maxV && contours.at(idx).size() > minV)
                 {
                     // fit & draw ellipse to counter at index
                     ellipse(original, fitEllipse(Mat(contours.at(idx))), Scalar(0,0,255), 1, 8);
@@ -157,33 +158,8 @@ int main(void)
         // render the frame to a window
         imshow("Stream - Original", original); 
         imshow("Stream - Processed", result);
-
     }
 
     std::cout << "SUCCESS: Program terminated like expected.\n";
     return 1;
 }
-
-
-/*
-
-
-// background subtraction - use given image without touches
-	absdiff(...);
-
-
-// simple highpass filter
-    blur(...);
-	absdiff(...);
-	blur(...); // optional
-
-
-// threshold
-	threshold(...);
-
-
-//find contours
-	findContours(...);
-
-
-*/
