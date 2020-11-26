@@ -42,7 +42,7 @@ int main(void)
     // load default image from disk
     string image_path = samples::findFile("./without_touch.jpg");
     Mat background = imread(image_path, IMREAD_GRAYSCALE);
-
+    RotatedRect actualEllipse;
 
     const char* windowName = "Fingertip detection";
     int wKey = 80;
@@ -108,9 +108,8 @@ int main(void)
         // High-Pass-Filter
         blur(result, blurred, Size(kernelSize, kernelSize));
         absdiff(result, blurred, result);
-        blur(result, result, Size(kernelSize, kernelSize)); 
+        blur(result, result, Size(kernelSize, kernelSize));
         
-
         threshold(result, result, thresh, 255, THRESH_BINARY);
 
         // After Image stuff... final.... convert image to grayscale image
@@ -121,7 +120,6 @@ int main(void)
         {
             for(int idx = 0; idx >= 0; idx = hierarchy[idx][0])
             {
-                 
                 // check contour size (number of points) and area ("blob" size)
                 double conArea= contourArea(Mat(contours.at(idx)));
                 if(conArea > maxV && contours.at(idx).size() > minV)
@@ -131,6 +129,13 @@ int main(void)
 
                     // draw contour at index
                     drawContours(original, contours, idx, Scalar(255,0,0), 1, 8, hierarchy);
+
+                    // P2 - get the center of a ellipse that was generated based on the finger blob
+                    actualEllipse = fitEllipse(Mat(contours.at(idx)));
+                    // P2 - now we can get the center information from the finger blob based ellipse
+
+                    // Show id at the finger blob....
+                    putText(original, "Fx", actualEllipse.center, FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
                 }
             }
         }
