@@ -40,7 +40,7 @@ public:
     int getId() { return id; }
     Point2f getPosition() { return position; }
     time_t getBornDate(){ return bornDateTime; }
-    list<Point2f> getPositionPath() { return positionPath; }
+    list<Point2f> getPositionPath();
 
 };
 

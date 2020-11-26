@@ -8,13 +8,8 @@
 #include <memory>
 #include <list>
 #include "Touch.h"
-#include "opencv2/opencv.hpp"
-#include <iostream>
-#include <time.h>
-#include <math.h>
-#include <vector>
-#include <Windows.h>
 #include "TouchController.h"
+#include "opencv2/opencv.hpp"
 
 using namespace std;
 using namespace cv;
@@ -23,7 +18,7 @@ class TouchController {
 
 private:
 
-	// Stores the ID's and the points as a Point2f Object in a List as a unique pointer...
+	// Stores the ID's and the points as a Point2f Object in a List as a shared pointer...
 	shared_ptr<list<Touch>> t0;
 	shared_ptr<list<Touch>> t1;
 	int uniqueIdCounter;
@@ -74,6 +69,6 @@ public:
 	shared_ptr<list<Touch>> getActualTouches();
 
 };
-
-
 #endif //MULTITOUCH_FROEMMER_TOUCHCONTROLLER_H
+
+

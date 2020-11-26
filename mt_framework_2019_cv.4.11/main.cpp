@@ -58,7 +58,10 @@ int main(void)
     cv::createTrackbar("Threshold", windowName, &thresh, 100);
     bool firstFrame = true;
 
-    //TouchController touchCon;
+    vector<Point2f> currentPoints;
+
+    TouchController touchCon;
+    
     for (;;)
     {
 
@@ -127,17 +130,18 @@ int main(void)
                 double conArea= contourArea(Mat(contours.at(idx)));
                 if(conArea > maxV && contours.at(idx).size() > minV)
                 {
+                    // P2 - get the center of a ellipse that was generated based on the finger blob
+                    actualEllipse = fitEllipse(Mat(contours.at(idx)));
+
                     // fit & draw ellipse to counter at index
-                    ellipse(original, fitEllipse(Mat(contours.at(idx))), Scalar(0,0,255), 1, 8);
+                    ellipse(original, actualEllipse, Scalar(0,0,255), 1, 8);
 
                     // draw contour at index
                     drawContours(original, contours, idx, Scalar(255,0,0), 1, 8, hierarchy);
 
-                    // P2 - get the center of a ellipse that was generated based on the finger blob
-                    actualEllipse = fitEllipse(Mat(contours.at(idx)));
                     // P2 - now we can get the center information from the finger blob based ellipse
-
                     // Show id at the finger blob....
+                
                     putText(original, "Fx", actualEllipse.center, FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
                 }
             }

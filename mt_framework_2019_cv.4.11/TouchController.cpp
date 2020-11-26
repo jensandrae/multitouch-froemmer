@@ -1,7 +1,7 @@
 //
 // Created by userx on 25.11.2020.
 //
-
+#pragma once
 #include "TouchController.h"
 
 TouchController::TouchController() {
@@ -10,17 +10,14 @@ TouchController::TouchController() {
     uniqueIdCounter = 0;
 }
 
-
 void TouchController::setNewFrame(list<Point2f> newTouches) {
     updateTouchLists();
-    t1 = std::make_shared<list<touch>>(newTouches);
+    //t1 = std::make_shared<list<Touch>>(newTouches);
 }
-
 
 void TouchController::updateTouchLists() {
-    t0 = std::make_shared<list<touch>>(t1);
+    //t0 = std::make_shared<list<Touch>>(t1);
 }
-
 
 void TouchController::pointsToTouches() {
 
@@ -34,11 +31,10 @@ void TouchController::processNNAresult() {
 
 }
 
-
 void TouchController::setNewIds() {
 
 }
 
-shared_ptr<list<touch>> TouchController::getActualTouches() {
-    return null;
+shared_ptr<list<Touch>> TouchController::getActualTouches() {
+    return nullptr;
 }
