@@ -5,8 +5,8 @@
 #include "TouchController.h"
 
 TouchController::TouchController() {
-    this->t0 = vector<Touch>();
-    this->t1 = vector<Touch>();
+    this->t0 = new vector<Touch*>();
+    this->t1 = new vector<Touch*>();
     this->newTouches = vector<Point2f>();
     this->uniqueIdCounter = 1;
 }
@@ -14,7 +14,7 @@ TouchController::TouchController() {
 /**
 * Set the new List of Point2f objects
 */
-vector<Touch> TouchController::calcNewFrame(vector<Point2f> newTouches) {
+vector<Touch*> TouchController::calcNewFrame(vector<Point2f> newTouches) {
 
     this->newTouches.clear();
     this->newTouches = newTouches;
@@ -33,9 +33,9 @@ vector<Touch> TouchController::calcNewFrame(vector<Point2f> newTouches) {
 * Deletes T0 and set T1 to T0
 */
 void TouchController::updateTouchLists() {
-    t0.clear();
-    t0 = t1;
-    t1.clear();
+    t0 = new vector<Touch*>();
+    *t0 = *t1;
+    t1 = new vector<Touch*>();
 }
 
 /**
@@ -43,9 +43,9 @@ void TouchController::updateTouchLists() {
 * without defining the ID and store it in the t1 list
 */
 void TouchController::pointsToTouches() {
-   
+
     for (Point2f p : newTouches) {
-        t1.push_back(Touch(p));
+        this->t1->push_back(new Touch(p));
     }
 }
 
@@ -55,78 +55,99 @@ void TouchController::pointsToTouches() {
 void TouchController::runNNA() {
 
     // reset the neighbour information, so that the points without neighbour will have a nullptr
-    for (Touch tElement0 : t0) {
-        tElement0.setTouchWithNextDistance(NULL);
+    vector<Touch*>::iterator iterT0;
+    for (iterT0 = this->t0->begin(); iterT0 != this->t0->end(); ++iterT0) {
+        (*iterT0)->setTouchWithNextDistance(NULL);
     }
-    
+
     // No touches in the last frame (t0)...
-    if (t0.size() == 0) {
-        
+    if (this->t0->size() == 0) {
+
         // ...and no touches in new frame (t1)
-        if (t1.size() == 0) {
+        if (this->t1->size() == 0) {
             // Nothing to do here, no neighbours no work...
         }
 
         // ...and new touches in new frame (t1), so all touches in the new frame (t1) are new fingers
         // no finger moves, no finger ups, all finger new
-        if (t1.size() > 0) {
+        if (this->t1->size() > 0) {
             // we can set all neightbours from (t1) to null, what means no neighbour there
             // See constructor "Touch.cpp" everything gets there done...
         }
     }
 
-    // There are touches in the last frame (t0)...
-    else if (t0.size() > 0) {
+        // There are touches in the last frame (t0)...
+    else if (this->t0->size() > 0) {
 
         // ...but in the new frame (t1) are no touches any more, so all finger moved up
-        if (t1.size() == 0) {
+        if (this->t1->size() == 0) {
             // Nothing to do here, all fingers are gone...
         }
 
         // ...and the new frame (t1) are also touches, now decide between [finger new, finger move, finger up]
-        if (t1.size() > 0) {
+        if (this->t1->size() > 0) {
             // LOOP: Find all NN's and set it to the Touch Objects....
-            for (Touch& tElement0 : t0) {
-                for (Touch& tElement1 : t1) {
+
+            vector<Touch*>::iterator iterT0;
+            for (iterT0 = this->t0->begin(); iterT0 != this->t0->end(); ++iterT0) {
+
+                Touch* t1_old = NULL;
+
+                vector<Touch*>::iterator iterT1;
+                for (iterT1 = this->t1->begin(); iterT1 != this->t1->end(); ++iterT1) {
+
+                    if (t1_old == NULL)
+                        t1_old = *iterT1;
+
                     // Calculate the distance between the two gieven point...
                     // ...from one t0 point to all given t1 points
-                    double actual_distance = calcDistance(tElement0.getPosition(), tElement1.getPosition());
+                    double actual_distance = calcDistance((*iterT0)->getPosition(), (*iterT1)->getPosition());
 
                     // Check if the actual distance is greater than the old
                     // If not, set the actual distance to the new distance and process....
 
-                    // Check if its the first run of this loop...
-                    if (tElement1.getDistance() < 0 || actual_distance < tElement1.getDistance()) {
-
-                        tElement0.setTouchWithNextDistance(&tElement1);
-                        tElement0.setDistance(actual_distance);
-                        tElement1.setTouchWithNextDistance(&tElement0);
-                        tElement1.setDistance(actual_distance);
+                    if ( actual_distance < t1_old->getDistance() ) {
+                        (*iterT0)->setTouchWithNextDistance(*iterT1);
+                        (*iterT0)->setDistance(actual_distance);
+                        (*iterT1)->setTouchWithNextDistance(*iterT0);
+                        (*iterT1)->setDistance(actual_distance);
                     }
+
                     // After all, set last distance to the actual distance
                 }
             }
         }
     }
 
-    int counter = 0;
-    for (Touch& tElement1 : t1) {
-        cout << ++counter << " :: " << tElement1.getPosition() << " :: " << tElement1.getDistance();
-        if (tElement1.getTouchWithNextDistance() != NULL)
-            cout << " :: POSSIBLE MOVE";
+    vector<Touch*>::iterator iterT1;
+    for (iterT1 = this->t1->begin(); iterT1 != this->t1->end(); ++iterT1) {
 
-        if (tElement1.getTouchWithNextDistance() == NULL)
-            cout << " :: NEW FINGER";
+        Touch* t0_old = NULL;
 
-        if (tElement1.getTouchWithNextDistance() != NULL)
-            cout << " :: NEIGHBOUR " << tElement1.getTouchWithNextDistance()->getPosition();
+        vector<Touch*>::iterator iterT0;
+        for (iterT0 = this->t0->begin(); iterT0 != this->t0->end(); ++iterT0) {
 
-        cout << endl;
+            if (t0_old == NULL)
+                t0_old = *iterT1;
+
+            // Calculate the distance between the two gieven point...
+            // ...from one t0 point to all given t1 points
+            double actual_distance = calcDistance((*iterT0)->getPosition(), (*iterT1)->getPosition());
+
+            // Check if the actual distance is greater than the old
+            // If not, set the actual distance to the new distance and process....
+
+            if (actual_distance < t0_old->getDistance()) {
+                (*iterT0)->setTouchWithNextDistance(*iterT1);
+                (*iterT0)->setDistance(actual_distance);
+                (*iterT1)->setTouchWithNextDistance(*iterT0);
+                (*iterT1)->setDistance(actual_distance);
+            }
+
+            // After all, set last distance to the actual distance
+        }
     }
 
-    if (counter > 0)
-        cout << "-------------------------------------------------------------" << endl;
-    
 }
 
 /**
@@ -135,35 +156,54 @@ void TouchController::runNNA() {
 */
 void TouchController::processNNAresult() {
 
+    cout << "::: processNNAresult() ... " << endl;
+
+    vector<Touch*>::iterator iterT0;
+    cout << "--------- iterT0 ---------" << endl;
+    for (iterT0 = this->t0->begin(); iterT0 != this->t0->end(); ++iterT0) {
+        cout << " id " << (*iterT0)->getId() << " -  distance " << (*iterT0)->getDistance() << endl;
+    }
+
+    cout << "--------- iterT1 ---------" << endl;
+    vector<Touch*>::iterator iterT1;
+    for (iterT1 = this->t1->begin(); iterT1 != this->t1->end(); ++iterT1) {
+        cout << " id " << (*iterT1)->getId() << " -  distance " << (*iterT1)->getDistance() << endl;
+    }
+
+
     // No touches in the last frame (t0)...
-    if (t0.size() == 0) {
+    if (this->t0->size() == 0) {
 
         // ...and no touches in new frame (t1)
-        if (t1.size() == 0) {
+        if (this->t1->size() == 0) {
             // Nothing to do here...
+            cout << "this->t1->size() == 0" << endl;
         }
 
         // ...and new touches in new frame (t1), so all touches in the new frame (t1) are new fingers
         // no finger moves, no finger ups
-        if (t1.size() > 0) {
-            for (Touch tElement1 : t1) {
-                tElement1.setId(getNextFreeId());
+        if (this->t1->size() > 0) {
+            cout << "this->t1->size() > 0" << endl;
+            vector<Touch*>::iterator iterT1;
+            for (iterT1 = this->t1->begin(); iterT1 != this->t1->end(); ++iterT1) {
+                (*iterT1)->setId(getNextFreeId());
             }
         }
     }
 
-    // There are touches in the last frame (t0)...
-    // Be aware, there can only be one element in list, a single element without a neighbour
-    else if (t0.size() > 0) {
-        
+        // There are touches in the last frame (t0)...
+        // Be aware, there can only be one element in list, a single element without a neighbour
+    else if (this->t0->size() > 0) {
+
         // ...but in the new frame (t1) are no touches any more, so all finger moved up
-        if (t1.size() == 0) {
+        if (this->t1->size() == 0) {
             // Nothing to do here....
         }
 
         // ...and the new frame (t1) are also touches, now decide between [finger new, finger move, finger up]
-        if (t1.size() > 0) {
-            for (Touch& tElement1 : t1) {
+        if (this->t1->size() > 0) {
+            vector<Touch*>::iterator iterT1;
+            for (iterT1 = this->t1->begin(); iterT1 != this->t1->end(); ++iterT1) {
 
                 // How you can see if a touch is new, moved or not present anymore ?
                 // new -> new id
@@ -175,32 +215,24 @@ void TouchController::processNNAresult() {
 
 
                 // NEW FINGER ::: Is not a move, so it can only be a new finger
-                if (tElement1.getDistance() > MAX_NEIGHBOUR_DISTANCE) {
+                if ((*iterT1)->getDistance() > MAX_NEIGHBOUR_DISTANCE) {
                     // tElement1.setTouchWithNextDistance(nullptr);
-                    tElement1.setId(getNextFreeId());
-                }
-                    
-                if (tElement1.getTouchWithNextDistance() == NULL) {
-                    tElement1.setId(getNextFreeId());
-                    // If you reached this line of code something went very wrong
-                    // tElement1.getTouchWithNextDistance() should not be null here !!!!
+                    (*iterT1)->setId(getNextFreeId());
                 }
 
-                
-                if (tElement1.getTouchWithNextDistance() != NULL) {
-                    // MOVE ::: Is a move...
-                    if (tElement1.getDistance() <= MAX_NEIGHBOUR_DISTANCE)
-                        // ToDo: Add Element to history to specific Touch
-                        // ToDo: WHY HERE ERROR 
-                        tElement1.setId(tElement1.getTouchWithNextDistance()->getId());
-                        // tElement1.setId(-99);
+                // MOVE ::: Is a move...
+                if ((*iterT1)->getDistance() <= MAX_NEIGHBOUR_DISTANCE) {
+                    // ToDo: Add Element to history to specific Touch
+                    // ToDo: WHY HERE ERROR
+                    (*iterT1)->setId((*iterT1)->getTouchWithNextDistance()->getId());
                 }
+                // tElement1.setId(-99);
             }
         }
     }
 
 
-    // At this point new finger are new cause the get a new unique id, finger ups are not present cause this are points 
+    // At this point new finger are new cause the get a new unique id, finger ups are not present cause this are points
 }
 
 /**
@@ -208,14 +240,14 @@ void TouchController::processNNAresult() {
 * Set new, unique id's to all new touches
 */
 int TouchController::getNextFreeId() {
-    return uniqueIdCounter++;
+    return this->uniqueIdCounter++;
 }
 
 /**
 * Getter for the actual (processed or unprocssed) list of touches in T1
 */
-vector<Touch> TouchController::getActualTouches() {
-    return this->t1;
+vector<Touch*> TouchController::getActualTouches() {
+    return *t1;
 }
 
 /**

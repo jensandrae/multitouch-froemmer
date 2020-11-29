@@ -10,9 +10,9 @@ Touch::Touch() {
     this->bornDateTime = time(0);
     this->positionPath = vector<Touch>();
     this->touchWithNextDistance = NULL;
-    this->distance = double(-1);
-    
-    
+    this->distance = double(9999999999);
+
+
 }
 
 Touch::Touch(Point2f position) {
@@ -21,11 +21,11 @@ Touch::Touch(Point2f position) {
     this->bornDateTime = time(0);
     this->positionPath = vector<Touch>();
     this->touchWithNextDistance = NULL;
-    this->distance = double(-1);
+    this->distance = double(9999999999);
 }
 
 void Touch::setId(int id) {
-    this->id = 0;
+    this->id = id;
 }
 
 void Touch::setPosition(Point2f position) {
@@ -40,6 +40,6 @@ void Touch::setDistance(double distance) {
     this->distance = distance;
 }
 
-void Touch::setBornNow( ) {
+void Touch::setBornNow() {
     this->bornDateTime = std::time(0);
 }

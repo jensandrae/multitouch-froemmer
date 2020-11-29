@@ -19,63 +19,63 @@ class TouchController {
 
 private:
 
-	// Stores the ID's and the points as a Point2f Object in a List as a shared pointer...
-	vector<Touch> t0;
-	vector<Touch> t1;
-	vector<Point2f> newTouches;
+    // Stores the ID's and the points as a Point2f Object in a List as a shared pointer...
+    vector<Touch*>* t0;
+    vector<Touch*>* t1;
+    vector<Point2f> newTouches;
 
-	double const MAX_NEIGHBOUR_DISTANCE = 200;
-	int uniqueIdCounter;
+    double const MAX_NEIGHBOUR_DISTANCE = 40.0;
+    int uniqueIdCounter;
 
 public:
-	
-	TouchController();
 
-	/**
-	* Set the new List of Point2f objects
-	*/
-	vector<Touch> calcNewFrame(vector<Point2f> newTouches);
+    TouchController();
 
-	/**
-	* Deletes T0 and set T1 to T0
-	*/
-	void updateTouchLists();
+    /**
+    * Set the new List of Point2f objects
+    */
+    vector<Touch*> calcNewFrame(vector<Point2f> newTouches);
 
-	/**
-	* Calculate all new Touch Objects from the given List of Point2f objects 
-	* without defining the ID and store it in the t1 list
-	*/
-	void pointsToTouches();
+    /**
+    * Deletes T0 and set T1 to T0
+    */
+    void updateTouchLists();
 
-
-	/**
-	* Run the nearest neighbour algorithm on T0 and T1
-	*/
-	void runNNA();
-
-	/**
-	* Compare the distances between each unique point between T0 and T1 in both directions to find the shortest distance
-	* And check on this way the 3 cases, new touch, move, finger up
-	*/
-	void processNNAresult();
-
-	
-	/**
-	* Iterate thorugh all touches in T0 and inherit all ID's to the nearest neighbour
-	* Set new, unique id's to all new touches
-	*/
-	int getNextFreeId();
+    /**
+    * Calculate all new Touch Objects from the given List of Point2f objects
+    * without defining the ID and store it in the t1 list
+    */
+    void pointsToTouches();
 
 
-	/**
-	* Getter for the actual (processed or unprocssed) list of touches in T1
-	*/
-	vector<Touch> getActualTouches();
+    /**
+    * Run the nearest neighbour algorithm on T0 and T1
+    */
+    void runNNA();
 
-	/**
-	* Calculate the distance between the two given points
-	*/
-	double calcDistance(Point2f first, Point2f second);
+    /**
+    * Compare the distances between each unique point between T0 and T1 in both directions to find the shortest distance
+    * And check on this way the 3 cases, new touch, move, finger up
+    */
+    void processNNAresult();
+
+
+    /**
+    * Iterate thorugh all touches in T0 and inherit all ID's to the nearest neighbour
+    * Set new, unique id's to all new touches
+    */
+    int getNextFreeId();
+
+
+    /**
+    * Getter for the actual (processed or unprocssed) list of touches in T1
+    */
+    vector<Touch*> getActualTouches();
+
+    /**
+    * Calculate the distance between the two given points
+    */
+    double calcDistance(Point2f first, Point2f second);
 
 };
 #endif //MULTITOUCH_FROEMMER_TOUCHCONTROLLER_H

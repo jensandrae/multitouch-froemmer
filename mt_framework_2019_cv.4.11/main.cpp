@@ -47,7 +47,7 @@ int main(void)
     RotatedRect actualEllipse;
 
     const char* windowName = "Fingertip detection";
-    int wKey = 80;
+    int wKey = 1;
     //Old values: 10, 4, 30, 4
     int kernelSize = 10, minV = 3, maxV = 26, thresh = 4;
     cv::namedWindow(windowName);
@@ -61,8 +61,8 @@ int main(void)
     vector<Point2f> currentPoints;
     TouchController touchController;
 
-    
-    
+
+
     for (;;)
     {
 
@@ -100,11 +100,11 @@ int main(void)
         // Vec4i is a structure for representing a vector with 4 dimensions, with each value an int.
         vector<Vec4i> hierarchy;
 
-        // 
+        //
         Mat original = grey.clone();
         Mat result, blurred;
 
-        if(background.empty())
+        if (background.empty())
         {
             std::cout << "Could not read the default image: " << image_path << std::endl;
             return 1;
@@ -116,7 +116,7 @@ int main(void)
         blur(result, blurred, Size(kernelSize, kernelSize));
         absdiff(result, blurred, result);
         blur(result, result, Size(kernelSize, kernelSize));
-        
+
         threshold(result, result, thresh, 255, THRESH_BINARY);
 
         // After Image stuff... final.... convert image to grayscale image
@@ -126,39 +126,36 @@ int main(void)
         currentPoints.clear();
 
         // iterate through akk the top-level counters -> "hierarchy" may not be empty!
-        if(hierarchy.size() > 0)
+        if (hierarchy.size() > 0)
         {
-            for(int idx = 0; idx >= 0; idx = hierarchy[idx][0])
+            for (int idx = 0; idx >= 0; idx = hierarchy[idx][0])
             {
                 // check contour size (number of points) and area ("blob" size)
-                double conArea= contourArea(Mat(contours.at(idx)));
-                if(conArea > maxV && contours.at(idx).size() > minV)
+                double conArea = contourArea(Mat(contours.at(idx)));
+                if (conArea > maxV && contours.at(idx).size() > minV)
                 {
-
-                    
-
                     // P2 - get the center of a ellipse that was generated based on the finger blob
                     actualEllipse = fitEllipse(Mat(contours.at(idx)));
 
                     // fit & draw ellipse to counter at index
-                    ellipse(original, actualEllipse, Scalar(0,0,255), 1, 8);
+                    ellipse(original, actualEllipse, Scalar(0, 0, 255), 1, 8);
 
                     // draw contour at index
-                    drawContours(original, contours, idx, Scalar(255,0,0), 1, 8, hierarchy);
+                    drawContours(original, contours, idx, Scalar(255, 0, 0), 1, 8, hierarchy);
 
                     // P2 - now we can get the center information from the finger blob based ellipse
-                   
-                    currentPoints.push_back(actualEllipse.center);             
+
+                    currentPoints.push_back(actualEllipse.center);
                 }
             }
         }
 
         // P2 - After all contours, ellipses and ellipse.center as Point2f were processed...
         // P2 - Set the list<Touch> to the touchController so that he can process the controle stuff...
-        vector<Touch> vector_t1 = touchController.calcNewFrame(currentPoints);
-        for (Touch vTouch : vector_t1) {
+        vector<Touch*> vector_t1 = touchController.calcNewFrame(currentPoints);
+        for (Touch* vTouch : vector_t1) {
             // P2: ToDo: Dont use this here, only for testing - Show id at the finger blob....
-            putText(original, to_string(vTouch.getId()), vTouch.getPosition() , FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
+            putText(original, to_string(vTouch->getId()), vTouch->getPosition(), FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
         }
 
         if (waitKey(wKey) == 27) // wait for user input
@@ -174,7 +171,7 @@ int main(void)
         ms_time = ms_end - ms_start;
 
         // write framecounter to the image (useful for debugging)
-        putText(original, "frame #" + (std::string)_itoa(currentFrame, buffer, 10), Point(0, 15), FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1, 8); 
+        putText(original, "frame #" + (std::string)_itoa(currentFrame, buffer, 10), Point(0, 15), FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1, 8);
         putText(grey, "frame #" + (std::string)_itoa(currentFrame, buffer, 10), Point(0, 15), FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1, 8);
 
         // write calculation time per frame to the image
@@ -182,7 +179,7 @@ int main(void)
         putText(grey, "time per frame: " + (std::string)_itoa(ms_time, buffer, 10) + "ms", Point(0, 30), FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1, 8);
 
         // render the frame to a window
-        imshow("Stream - Original", original); 
+        imshow("Stream - Original", original);
         imshow("Stream - Processed", result);
     }
 
