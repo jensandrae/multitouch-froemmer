@@ -59,8 +59,9 @@ int main(void)
     bool firstFrame = true;
 
     vector<Point2f> currentPoints;
+    TouchController touchController;
 
-    TouchController touchCon;
+    
     
     for (;;)
     {
@@ -121,6 +122,9 @@ int main(void)
         // After Image stuff... final.... convert image to grayscale image
         findContours(result, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
 
+        // P2 - Clear the currentPoints list for each new frame...
+        currentPoints.clear();
+
         // iterate through akk the top-level counters -> "hierarchy" may not be empty!
         if(hierarchy.size() > 0)
         {
@@ -130,6 +134,9 @@ int main(void)
                 double conArea= contourArea(Mat(contours.at(idx)));
                 if(conArea > maxV && contours.at(idx).size() > minV)
                 {
+
+                    
+
                     // P2 - get the center of a ellipse that was generated based on the finger blob
                     actualEllipse = fitEllipse(Mat(contours.at(idx)));
 
@@ -140,11 +147,18 @@ int main(void)
                     drawContours(original, contours, idx, Scalar(255,0,0), 1, 8, hierarchy);
 
                     // P2 - now we can get the center information from the finger blob based ellipse
-                    // Show id at the finger blob....
-                
-                    putText(original, "Fx", actualEllipse.center, FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
+                   
+                    currentPoints.push_back(actualEllipse.center);             
                 }
             }
+        }
+
+        // P2 - After all contours, ellipses and ellipse.center as Point2f were processed...
+        // P2 - Set the list<Touch> to the touchController so that he can process the controle stuff...
+        vector<Touch> vector_t1 = touchController.calcNewFrame(currentPoints);
+        for (Touch vTouch : vector_t1) {
+            // P2: ToDo: Dont use this here, only for testing - Show id at the finger blob....
+            putText(original, to_string(vTouch.getId()), vTouch.getPosition() , FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
         }
 
         if (waitKey(wKey) == 27) // wait for user input

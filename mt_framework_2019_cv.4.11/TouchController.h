@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <list>
+#include <math.h>
 #include "Touch.h"
 #include "TouchController.h"
 #include "opencv2/opencv.hpp"
@@ -19,8 +20,11 @@ class TouchController {
 private:
 
 	// Stores the ID's and the points as a Point2f Object in a List as a shared pointer...
-	shared_ptr<list<Touch>> t0;
-	shared_ptr<list<Touch>> t1;
+	vector<Touch> t0;
+	vector<Touch> t1;
+	vector<Point2f> newTouches;
+
+	double const MAX_NEIGHBOUR_DISTANCE = 200;
 	int uniqueIdCounter;
 
 public:
@@ -30,7 +34,7 @@ public:
 	/**
 	* Set the new List of Point2f objects
 	*/
-	void setNewFrame(list<Point2f> newTouches);
+	vector<Touch> calcNewFrame(vector<Point2f> newTouches);
 
 	/**
 	* Deletes T0 and set T1 to T0
@@ -60,13 +64,18 @@ public:
 	* Iterate thorugh all touches in T0 and inherit all ID's to the nearest neighbour
 	* Set new, unique id's to all new touches
 	*/
-	void setNewIds();
+	int getNextFreeId();
 
 
 	/**
 	* Getter for the actual (processed or unprocssed) list of touches in T1
 	*/
-	shared_ptr<list<Touch>> getActualTouches();
+	vector<Touch> getActualTouches();
+
+	/**
+	* Calculate the distance between the two given points
+	*/
+	double calcDistance(Point2f first, Point2f second);
 
 };
 #endif //MULTITOUCH_FROEMMER_TOUCHCONTROLLER_H

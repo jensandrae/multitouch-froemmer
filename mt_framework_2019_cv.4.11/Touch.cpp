@@ -4,24 +4,42 @@
 #pragma once
 #include "Touch.h"
 
-Touch::Touch(Point2f position) {
-    setPosition(position);
+Touch::Touch() {
+    this->id = int(-1);
+    this->position = Point2f();
+    this->bornDateTime = time(0);
+    this->positionPath = vector<Touch>();
+    this->touchWithNextDistance = NULL;
+    this->distance = double(-1);
+    
+    
 }
 
-Touch::Touch(int id, Point2f position) {
-    setId(id);
-    setPosition(position);
+Touch::Touch(Point2f position) {
+    this->id = int(-1);
+    this->position = position;  // set
+    this->bornDateTime = time(0);
+    this->positionPath = vector<Touch>();
+    this->touchWithNextDistance = NULL;
+    this->distance = double(-1);
 }
 
 void Touch::setId(int id) {
-    this->id = id;
+    this->id = 0;
 }
 
 void Touch::setPosition(Point2f position) {
     this->position = position;
 }
 
-list<Point2f> Touch::getPositionPath()
-{
-    return list<Point2f>();
+void Touch::setTouchWithNextDistance(Touch* touchWithNextDistance) {
+    this->touchWithNextDistance = touchWithNextDistance;
+}
+
+void Touch::setDistance(double distance) {
+    this->distance = distance;
+}
+
+void Touch::setBornNow( ) {
+    this->bornDateTime = std::time(0);
 }
