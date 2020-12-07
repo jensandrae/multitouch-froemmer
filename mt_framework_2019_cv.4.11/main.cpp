@@ -11,13 +11,59 @@
 #include <math.h>
 #include <vector>
 #include <Windows.h>
-#include "TouchController.h"
+#include "TouchPoint.h"
 
-#define SCALE_SOBEL 1
-#define DELTA_SOBEL 0
+//
+#define TOUCH_MAX_CUTOFF_DIST 8000
+int touchPointID = 0;
 
 using namespace cv;
 using namespace std;
+
+double squareDistance(TouchPoint first, TouchPoint second) {
+    double x = abs(first.point.x - second.point.x);
+    double y = abs(first.point.y - second.point.y);
+    double squareDist = x * x + y * y;
+    return squareDist;
+}
+
+std::vector<TouchPoint> nearestNeighbor(std::vector<cv::Point2f> currentPoints, std::vector<TouchPoint> previousPoints)
+{
+    vector<TouchPoint> newPoints;
+    //Dirty Hack!!!
+    double closestDist = 9999999;
+    //The index of the closest Element in the previous Frame
+    int closestTouchPointIdxT0 = -1;
+    bool foundPoint = false;
+
+    for (int i = 0; i < currentPoints.size();) {
+        for (int j = 0; j < previousPoints.size(); j++) {
+
+            //Calc dist
+            double dist = squareDistance(currentPoints.at(i), previousPoints.at(j));
+            if (dist < closestDist && dist < TOUCH_MAX_CUTOFF_DIST) {
+                closestDist = dist;
+                closestTouchPointIdxT0 = j;
+                foundPoint = true;
+            }
+            // Only for Debug
+            //std::cout << dist << "\n";
+        }
+        //std::cout << closestDist << "\n";
+        TouchPoint tp(currentPoints.at(i),(foundPoint) ? previousPoints.at(closestTouchPointIdxT0).mID : ++touchPointID);
+        if (foundPoint) {
+            previousPoints.erase(previousPoints.begin() + closestTouchPointIdxT0);   
+        }
+        currentPoints.erase(currentPoints.begin());
+        newPoints.push_back(tp);
+        
+        closestTouchPointIdxT0 = -1;
+        foundPoint = false;
+        //Dirty Hack!!!
+        closestDist = 9999999;
+    }
+    return newPoints;
+}
 
 int main(void)
 {
@@ -41,9 +87,6 @@ int main(void)
 
     char buffer[10]; // buffer for int to ascii conversion -> itoa(...)
 
-    // load default image from disk
-    string image_path = samples::findFile("./without_touch.jpg");
-    Mat background = imread(image_path, IMREAD_GRAYSCALE);
     RotatedRect actualEllipse;
 
     const char* windowName = "Fingertip detection";
@@ -58,14 +101,11 @@ int main(void)
     cv::createTrackbar("Threshold", windowName, &thresh, 100);
     bool firstFrame = true;
 
-    vector<Point2f> currentPoints;
-    TouchController touchController;
-
-    
+    vector<TouchPoint> previousPoints;
+    vector<Point2f> currentPoints;    
     
     for (;;)
     {
-
         ms_start = clock(); // time start
 
         cap >> frame; // get a new frame from the videostream
@@ -100,15 +140,8 @@ int main(void)
         // Vec4i is a structure for representing a vector with 4 dimensions, with each value an int.
         vector<Vec4i> hierarchy;
 
-        // 
         Mat original = grey.clone();
         Mat result, blurred;
-
-        if(background.empty())
-        {
-            std::cout << "Could not read the default image: " << image_path << std::endl;
-            return 1;
-        }
 
         // get the difference from original image (without touches) to touched image
         absdiff(refImg, grey, result);
@@ -135,8 +168,6 @@ int main(void)
                 if(conArea > maxV && contours.at(idx).size() > minV)
                 {
 
-                    
-
                     // P2 - get the center of a ellipse that was generated based on the finger blob
                     actualEllipse = fitEllipse(Mat(contours.at(idx)));
 
@@ -152,14 +183,16 @@ int main(void)
                 }
             }
         }
-
+        
+        std::vector<TouchPoint> newPoints = nearestNeighbor(currentPoints, previousPoints);
         // P2 - After all contours, ellipses and ellipse.center as Point2f were processed...
-        // P2 - Set the list<Touch> to the touchController so that he can process the controle stuff...
-        vector<Touch> vector_t1 = touchController.calcNewFrame(currentPoints);
-        for (Touch vTouch : vector_t1) {
-            // P2: ToDo: Dont use this here, only for testing - Show id at the finger blob....
-            putText(original, to_string(vTouch.getId()), vTouch.getPosition() , FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
-        }
+        // Reassign touchPoints 
+        previousPoints = newPoints;
+        
+        for (TouchPoint &vTouch : previousPoints) {
+            //Draw IDs for each finger
+            putText(original, to_string(vTouch.mID), vTouch.point, FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
+        } 
 
         if (waitKey(wKey) == 27) // wait for user input
         {
@@ -184,6 +217,7 @@ int main(void)
         // render the frame to a window
         imshow("Stream - Original", original); 
         imshow("Stream - Processed", result);
+
     }
 
     std::cout << "SUCCESS: Program terminated like expected.\n";
