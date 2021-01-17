@@ -10,9 +10,10 @@ public:
 	cv::Point2f point;
 	int mID;
 
+	TouchPoint(){};
 	TouchPoint(cv::Point2f p):point(p), mID(-1), tcur(nullptr){}
 	TouchPoint(cv::Point2f p, int id) :point(p), mID(id), tcur(nullptr) {}
-	TouchPoint(cv::Point2f p, int id, shared_ptr<TUIO::TuioCursor> cursor) :point(p), mID(id), tcur(cursor) {}
+	TouchPoint(cv::Point2f p, int id, std::shared_ptr<TUIO::TuioCursor> cursor) :point(p), mID(id), tcur(cursor) {}
 
 	~TouchPoint() {}
 };

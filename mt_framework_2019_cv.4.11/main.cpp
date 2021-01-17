@@ -10,15 +10,17 @@
 #include <time.h>
 #include <math.h>
 #include <vector>
+#include <memory>
 #include <Windows.h>
 #include "TouchPoint.h"
 #include "../TUIO/TuioServer.h"
-#include "../TUIO/TuioPoint.h"
 #include "../TUIO/TuioCursor.h"
 #include "../TUIO/TuioTime.h"
 
 #define TOUCH_MAX_CUTOFF_DIST 8000
 int touchPointID = 0;
+double width;
+double height;
 
 using namespace cv;
 using namespace std;
@@ -30,7 +32,7 @@ double squareDistance(TouchPoint first, TouchPoint second) {
     return squareDist;
 }
 
-std::vector<TouchPoint> nearestNeighbor(std::vector<cv::Point2f> currentPoints, std::vector<TouchPoint> previousPoints)
+std::vector<TouchPoint> nearestNeighbor(std::vector<cv::Point2f> currentPoints, std::vector<TouchPoint> previousPoints, TUIO::TuioServer* tserv)
 {
     vector<TouchPoint> newPoints;
     //Dirty Hack!!!
@@ -53,9 +55,25 @@ std::vector<TouchPoint> nearestNeighbor(std::vector<cv::Point2f> currentPoints, 
             //std::cout << dist << "\n";
         }
 
-        TouchPoint tp(currentPoints.at(i),(foundPoint) ? previousPoints.at(closestTouchPointIdxT0).mID : ++touchPointID);
-        if (foundPoint) {
+        TouchPoint tp;
+        cv::Point2f curPoint = currentPoints.at(i);
+
+        if (foundPoint) { // Old point has been found and needs to be updated!
+            TouchPoint tpOld = previousPoints.at(closestTouchPointIdxT0);
+            
+            tp = TouchPoint(currentPoints.at(i),tpOld.mID, tpOld.tcur);
+            tserv->updateTuioCursor(tpOld.tcur.get(), ((double)curPoint.x) / width, ((double)curPoint.y) / height);
+
             previousPoints.erase(previousPoints.begin() + closestTouchPointIdxT0);   
+        }
+        else { // There is a new Point
+            int tempPointID = ++touchPointID;
+            auto cursor_ptr = std::make_shared<TUIO::TuioCursor>(tserv->getSessionID(),
+                                                                 tempPointID,
+                                                                 ((double)curPoint.x) / width,
+                                                                 ((double)curPoint.y) / height);
+            tp = TouchPoint(curPoint, tempPointID, cursor_ptr);
+            tserv->addExternalTuioCursor(tp.tcur.get());
         }
         currentPoints.erase(currentPoints.begin());
         newPoints.push_back(tp);
@@ -65,6 +83,15 @@ std::vector<TouchPoint> nearestNeighbor(std::vector<cv::Point2f> currentPoints, 
         //Dirty Hack!!!
         closestDist = 9999999;
     }
+
+    // Remove old touches from the tuio server
+    for (TouchPoint tpTemp : previousPoints) {
+        tserv->removeExternalTuioCursor(tpTemp.tcur.get());
+        tpTemp.tcur.reset();
+    }
+
+    // For debug purposes!
+    //std::cout << endl << previousPoints.size() << endl << currentPoints.size() << endl;
     return newPoints;
 }
 
@@ -80,8 +107,8 @@ int main(void)
     }
 
     // get the frame size of the videocapture object
-    double videoWidth = cap.get(CAP_PROP_FRAME_WIDTH);
-    double videoHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
+    double videoWidth = width = cap.get(CAP_PROP_FRAME_WIDTH);
+    double videoHeight = height = cap.get(CAP_PROP_FRAME_HEIGHT);
 
     Mat frame, original, grey, refImg, onlyContours;
 
@@ -189,7 +216,7 @@ int main(void)
             }
         }
         
-        std::vector<TouchPoint> newPoints = nearestNeighbor(currentPoints, previousPoints);
+        std::vector<TouchPoint> newPoints = nearestNeighbor(currentPoints, previousPoints, tuioServer);
         // P2 - After all contours, ellipses and ellipse.center as Point2f were processed...
         // Reassign touchPoints 
         previousPoints = newPoints;
@@ -198,6 +225,10 @@ int main(void)
             //Draw IDs for each finger
             putText(original, to_string(vTouch.mID), vTouch.point, FONT_HERSHEY_PLAIN, 1, CV_RGB(255, 255, 255), 1);
         } 
+
+        //Send the TUIO events
+        tuioServer->initFrame(TUIO::TuioTime::getSessionTime());
+        tuioServer->sendFullMessages();
 
         if (waitKey(wKey) == 27) // wait for user input
         {
@@ -225,7 +256,7 @@ int main(void)
 
     }
 
-    delete tuioServer;
+    //delete tuioServer;
     std::cout << "SUCCESS: Program terminated like expected.\n";
     return 1;
 }
