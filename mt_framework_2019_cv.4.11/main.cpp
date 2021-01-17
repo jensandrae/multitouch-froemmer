@@ -12,8 +12,11 @@
 #include <vector>
 #include <Windows.h>
 #include "TouchPoint.h"
+#include "../TUIO/TuioServer.h"
+#include "../TUIO/TuioPoint.h"
+#include "../TUIO/TuioCursor.h"
+#include "../TUIO/TuioTime.h"
 
-//
 #define TOUCH_MAX_CUTOFF_DIST 8000
 int touchPointID = 0;
 
@@ -49,7 +52,7 @@ std::vector<TouchPoint> nearestNeighbor(std::vector<cv::Point2f> currentPoints, 
             // Only for Debug
             //std::cout << dist << "\n";
         }
-        //std::cout << closestDist << "\n";
+
         TouchPoint tp(currentPoints.at(i),(foundPoint) ? previousPoints.at(closestTouchPointIdxT0).mID : ++touchPointID);
         if (foundPoint) {
             previousPoints.erase(previousPoints.begin() + closestTouchPointIdxT0);   
@@ -103,6 +106,8 @@ int main(void)
 
     vector<TouchPoint> previousPoints;
     vector<Point2f> currentPoints;    
+
+    TUIO::TuioServer* tuioServer = new TUIO::TuioServer();
     
     for (;;)
     {
@@ -220,6 +225,7 @@ int main(void)
 
     }
 
+    delete tuioServer;
     std::cout << "SUCCESS: Program terminated like expected.\n";
     return 1;
 }
